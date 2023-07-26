@@ -1,7 +1,26 @@
-<h1>Hello, World!</h1>
 
-<script>
-d3.csv("./IMDB.csv", function(data) {
-    console.log(data);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="ISO-8859-1">
+<title>Loading CSV data with D3</title>
+<script type="text/javascript" src="http://d3js.org/d3.v3.js"></script>
+</head>
+<body bgcolor=lightgray>
+<h1>Loading CSV data with D3</h1>
+<p style="color:red">Not much to see on the web page; try looking in the console!</p>
+<script type="text/javascript">
+
+
+//Load in contents of CSV file
+d3.csv("IMDB.csv", function(data) {
+	
+	//Using this CSV contents have transformed into an array
+	
+	//In order to view the CSV data , enter the following command in the console , for verification.
+	console.log(data);
+	
 });
 </script>
+</body>
+</html>
