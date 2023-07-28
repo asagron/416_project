@@ -1,26 +1,456 @@
-
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="ISO-8859-1">
-<title>Loading CSV data with D3</title>
-<script type="text/javascript" src="http://d3js.org/d3.v3.js"></script>
-</head>
-<body bgcolor=lightgray>
-<h1>Loading CSV data with D3</h1>
-<p style="color:red">Not much to see on the web page; try looking in the console!</p>
-<script type="text/javascript">
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<!-- Load d3-annotation -->
+<script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+
+<!-- Add 2 buttons -->
+<button onclick="update('Episodes')">Episodes</button>
+<button onclick="update('Year_Start')">Year Start</button>
+<button onclick="update('Year_End')">Year End</button>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+  <style>
+  .circle:hover{
+    stroke: black;
+    stroke-width: 4px;
+  }
+  
+  #my_dataviz {
+   position: relative;
+  }
+  .tooltip {
+    position: absolute;
+  }
+  </style>
+    <script>
+
+        // set the dimensions and margins of the graph
+        var margin = {top: 10, right: 30, bottom: 60, left: 60},
+            width = 690 - margin.left - margin.right,
+            height = 630 - margin.top - margin.bottom;
+        
+        // append the svg object to the body of the page
+        var svg = d3.select("#my_dataviz")
+          .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform",
+                  "translate(" + margin.left + "," + margin.top + ")");
+        // Define annotations
+        const annotationsOnePiece = [
+                {
+                    note: {
+                    label: "1076 episodes (1999-)",
+                    title: "68. One Piece"
+                    },
+                    data: { Episodes: 1076, Ranking: 68 },
+                    dy: -80,
+                    dx: -40
+                }
+                ]
+        const annotationsBG = [
+                {
+                    note: {
+                    label: "2 episodes (2003)",
+                    title: "181. Battlestar Galactica"
+                    },
+                    data: { Episodes: 2, Ranking: 181 },
+                    dy: -60,
+                    dx: 140
+                }
+                ]
+        const annotationsDesc2 = [
+        {
+            note: {
+            label: "There appears to be a recency bias on IMDB",
+            title: "IMDB's Top 250 TV Shows"
+            },
+            x:40,
+            y:40,
+        }
+        ]
+        const annotationsDesc = [
+        {
+            note: {
+            label: "Number of episodes does not seem to have an impact on ranking",
+            title: "IMDB's Top 250 TV Shows"
+            },
+            x:400,
+            y:40,
+        }
+        ]
+        const annotationsDesc3 = [
+        {
+            note: {
+            label: "Over 60 shows have no end date listed",
+            title: "IMDB's Top 250 TV Shows"
+            },
+            x:40,
+            y:240,
+        }
+        ]
+        const annotationsTZ = [
+        {
+            note: {
+            label: "156 episodes (1959-1964)",
+            title: "20. The Twilight Zone"
+            },
+            data: { Year_Start: 1959, Ranking: 20 },
+            dy: -100,
+            dx: 0
+        }
+        ]
+        const annotationsTLOU = [
+        {
+            note: {
+            label: "10 episodes (2023)",
+            title: "69. The Last of Us"
+            },
+            data: { Year_Start: 2023, Ranking: 69 },
+            dy: -150,
+            dx: -120
+        }
+        ]
+        const annotationsAH = [
+        {
+            note: {
+            label: "268 episodes (1955-1962)",
+            title: "244. Alfred Hitchcock Presents"
+            },
+            data: { Year_End: 1962, Ranking: 244 },
+            dy: 40,
+            dx: 0
+        }
+        ]
+        const annotationsST= [
+        {
+            note: {
+            label: "42 episodes (2016-2024)",
+            title: "102. Stranger Things"
+            },
+            data: { Year_End: 2024, Ranking: 102 },
+            dy: -80,
+            dx: -90
+        }
+        ]
+       
+        // Add X axis
+        var x = d3.scaleLinear()
+          .domain([0, width])
+          .range([ 0, width ]);
+        var xAxis = svg.append("g")
+          .attr("id", "x-axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x))
+      
+        // Add Y axis
+        var y = d3.scaleLinear()
+          .domain([0, 250])
+          .range([ height, 0]);
+        var yAxis = svg.append("g")
+          .call(d3.axisLeft(y))
+
+        // Y axis label:
+          svg.append("text")
+              .attr("text-anchor", "end")
+              .attr("transform", "rotate(-90)")
+              .attr("y", -margin.left + 20)
+              .attr("x", -margin.top - height/2 + 20)
+              .text("Ranking")
+
+        function initData(){
+          d3.csv("https://raw.githubusercontent.com/asagron/416_project/main/imdb_final_data.csv", function(data) {
+
+          // X axis
+          x.domain([0, 1100]);
+          xAxis.call(d3.axisBottom(x))
+
+          // Add X axis label:
+          svg.append("text")
+              .attr("text-anchor", "end")
+              .attr("id", "x-label")
+              .attr("x", width/2 + margin.left)
+              .attr("y", height + margin.top + 20)
+              .text("Number of Episodes");
+
+          // Add Y axis
+          y.domain([0, 250 ])
+          yAxis.call(d3.axisLeft(y));
+
+          // Add a tooltip div. Here I define the general feature of the tooltip: stuff that do not depend on the data point.
+          // Its opacity is set to 0: we don't see it by default.
+          var tooltip = d3.select("#my_dataviz")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+            .style("position", "absolute")
+
+          // A function that change this tooltip when the user hover a point.
+          // Its opacity is set to 1: we can now see it. Plus it set the text and position of tooltip depending on the datapoint (d)
+          var mouseover = function(d) {
+            tooltip
+              .style("opacity", 1)
+          }
+
+          var mousemove = function(d) {
+            tooltip
+              .html(d.Ranking + ". " + d.Name + "<br>\(" 
+                  + d.Year_Start + "-" + d.Year_End + "), " 
+                    + d.Episodes + " episodes")
+              .style("left", (d3.mouse(this)[0]+90) + "px")
+              .style("top", (d3.mouse(this)[1]) + "px")
+          }
+
+          // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+          var mouseleave = function(d) {
+            tooltip
+              .transition()
+              .duration(200)
+              .style("opacity", 0)
+          }
 
 
-//Load in contents of CSV file
-d3.csv("IMDB.csv", function(data) {
-	
-	//Using this CSV contents have transformed into an array
-	
-	//In order to view the CSV data , enter the following command in the console , for verification.
-	console.log(data);
-	
-});
-</script>
-</body>
-</html>
+          // add dots
+          svg.append('g')
+          .selectAll("dot")
+          .data(data)
+          .enter()
+          .append("circle")
+            .attr("cx", function (d) { return x(d.Episodes); } )
+            .attr("cy", function (d) { return y(d.Ranking); } )
+            .attr("r", 3)
+            .style("fill", "#69b3a2")
+          .on("mouseover", mouseover )
+          .on("mousemove", mousemove )
+          .on("mouseleave", mouseleave )
+
+            const makeAnnotationsOP = d3.annotation()
+              .annotations(annotationsOnePiece)
+              .accessors({
+                            x: d => x(d.Episodes),
+                            y: d => y(d.Ranking)
+                          })
+              
+              svg.append("g").style("font", "15px times")
+              .call(makeAnnotationsOP)
+
+              const makeAnnotationsBG = d3.annotation()
+              .annotations(annotationsBG)
+              .accessors({
+                            x: d => x(d.Episodes),
+                            y: d => y(d.Ranking)
+                          })
+              
+              svg.append("g").style("font", "15px times")
+              .call(makeAnnotationsBG)
+
+              const makeAnnotationsDesc = d3.annotation()
+              .annotations(annotationsDesc)                
+              svg.append("g").style("font", "18px times")
+              .call(makeAnnotationsDesc)
+})
+
+
+        }
+
+        function update(selectedVar) {
+
+          // Parse the Data
+          d3.csv("https://raw.githubusercontent.com/asagron/416_project/main/imdb_final_data.csv", function(data) {
+
+            // X axis
+            x.domain([d3.min(data, function(d) { return +d[selectedVar] }) - 5, d3.max(data, function(d) { return +d[selectedVar] }) ]);
+            xAxis.transition().duration(1000).call(d3.axisBottom(x))
+
+            // Add Y axis
+            y.domain([0, 250 ])
+            yAxis.transition().duration(1000).call(d3.axisLeft(y));
+
+          // Add a tooltip div. Here I define the general feature of the tooltip: stuff that do not depend on the data point.
+          // Its opacity is set to 0: we don't see it by default.
+          var tooltip = d3.select("#my_dataviz")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+            .style("position", "absolute")
+
+          // A function that change this tooltip when the user hover a point.
+          // Its opacity is set to 1: we can now see it. Plus it set the text and position of tooltip depending on the datapoint (d)
+          var mouseover = function(d) {
+            tooltip
+              .style("opacity", 1)
+          }
+
+          var mousemove = function(d) {
+            tooltip
+              .html(d.Ranking + ". " + d.Name + "<br>\(" 
+                  + d.Year_Start + "-" + d.Year_End + "), " 
+                    + d.Episodes + " episodes")
+              .style("left", (d3.mouse(this)[0]+90) + "px")
+              .style("top", (d3.mouse(this)[1]) + "px")
+          }
+
+          // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+          var mouseleave = function(d) {
+            tooltip
+              .transition()
+              .duration(200)
+              .style("opacity", 0)
+          }
+
+            // update dots
+            svg.selectAll("circle")
+                  .transition()
+                  .delay(100)
+                  .duration(2000)
+                  .attr("cx", function (d) { return x(d[selectedVar]); } )
+
+            switch(selectedVar) {
+              case 'Episodes':
+
+              svg.selectAll(".annotation")
+                  .transition()
+                  .delay(0)
+                  .duration(0)
+                  .style("opacity", 0)
+
+              svg.select("#x-label")
+                .transition()
+                .delay(1000)
+                .duration(3000)
+                .text("Episodes")
+
+                const makeAnnotationsOP = d3.annotation()
+                .annotations(annotationsOnePiece)
+                .accessors({
+                              x: d => x(d.Episodes),
+                              y: d => y(d.Ranking)
+                            })
+                
+                svg.append("g").style("font", "15px times")
+                .call(makeAnnotationsOP)
+
+                const makeAnnotationsBG = d3.annotation()
+                .annotations(annotationsBG)
+                .accessors({
+                              x: d => x(d.Episodes),
+                              y: d => y(d.Ranking)
+                            })
+                
+                svg.append("g").style("font", "15px times")
+                .call(makeAnnotationsBG)
+
+                const makeAnnotationsDesc = d3.annotation()
+                .annotations(annotationsDesc)                
+                svg.append("g").style("font", "18px times")
+                .call(makeAnnotationsDesc)
+                break;
+
+              case 'Year_Start':
+
+              svg.selectAll(".annotation")
+                  .transition()
+                  .delay(0)
+                  .duration(0)
+                  .style("opacity", 0)
+
+              svg.select("#x-label")
+                .transition()
+                .delay(1000)
+                .duration(3000)
+                .text("Premiere Year")
+
+              const makeAnnotationsTZ = d3.annotation()
+                .annotations(annotationsTZ)
+                .accessors({
+                              x: d => x(d.Year_Start),
+                              y: d => y(d.Ranking)
+                            })
+            
+              svg.append("g").style("font", "15px times")
+                .call(makeAnnotationsTZ)
+
+              const makeAnnotationsTLOU = d3.annotation()
+                .annotations(annotationsTLOU)
+                .accessors({
+                              x: d => x(d.Year_Start),
+                              y: d => y(d.Ranking)
+                            })
+            
+              svg.append("g").style("font", "15px times")
+                .call(makeAnnotationsTLOU)
+
+              const makeAnnotationsDesc2 = d3.annotation()
+                .annotations(annotationsDesc2)                
+                svg.append("g").style("font", "18px times")
+                .call(makeAnnotationsDesc2)
+                break;
+
+              case 'Year_End':
+              svg.selectAll(".annotation")
+                  .transition()
+                  .delay(0)
+                  .duration(0)
+                  .style("opacity", 0)
+
+              svg.select("#x-label")
+                .transition()
+                .delay(1000)
+                .duration(3000)
+                .text("Finale Year")
+
+              const makeAnnotationsDesc3 = d3.annotation()
+                .annotations(annotationsDesc3)                
+                svg.append("g").style("font", "18px times")
+                .call(makeAnnotationsDesc3)
+
+              const makeAnnotationsAH = d3.annotation()
+                .annotations(annotationsAH)
+                .accessors({
+                              x: d => x(d.Year_End),
+                              y: d => y(d.Ranking)
+                            })
+            
+              svg.append("g").style("font", "15px times")
+                .call(makeAnnotationsAH)
+
+              const makeAnnotationsST = d3.annotation()
+                .annotations(annotationsST)
+                .accessors({
+                              x: d => x(d.Year_End),
+                              y: d => y(d.Ranking)
+                            })
+            
+              svg.append("g").style("font", "15px times")
+                .call(makeAnnotationsST)
+
+                break;
+
+              default:
+                console.log('default')
+                // code block
+}
+          })
+
+          }
+  
+        initData()      
+        
+        </script>
